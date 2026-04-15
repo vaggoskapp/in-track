@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kart Dash</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: 'Arial Black', sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #setup { display: flex; flex-direction: column; gap: 10px; }
+        input { padding: 15px; font-size: 1.2rem; border-radius: 8px; border: none; }
+        button { padding: 15px; font-size: 1.2rem; background: #29abe1; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        
+        #dash { display: none; text-align: center; width: 100%; }
+        .label { font-size: 1.5rem; color: #888; text-transform: uppercase; }
+        .time { font-size: 25vw; line-height: 1; margin: 10px 0; color: #00ff00; }
+        .best { font-size: 8vw; color: #ffcc00; }
+        .info { font-size: 5vw; margin-top: 20px; color: #29abe1; }
+    </style>
+</head>
+<body>
+
+    <div id="setup">
+        <input type="text" id="driverName" placeholder="Το όνομά σου (όπως στο live)" value="Markos Saridis">
+        <button onclick="startTracking()">START TRACKING</button>
+    </div>
+
+    <div id="dash">
+        <div class="label">Last Lap</div>
+        <div id="lastTime" class="time">--.---</div>
+        <div class="best">BEST: <span id="bestTime">--.---</span></div>
+        <div id="posInfo" class="info">POS: - | LAP: -</div>
+    </div>
+
+    <script>
+        let targetName = "";
+        const apiUrl = "https://live.racefacer.com/ajax/live-data?slug=speedforce2";
+        // Χρησιμοποιούμε έναν free proxy για να προσπεράσουμε το CORS
+        const proxy = "https://api.allorigins.win/get?url=";
+
+        async function fetchData() {
+            try {
+                const response = await fetch(proxy + encodeURIComponent(apiUrl));
+                const json = await response.json();
+                const data = JSON.parse(json.contents);
+                
+                const myRun = data.data.runs.find(r => r.name.toLowerCase().includes(targetName.toLowerCase()));
+
+                if (myRun) {
+                    document.getElementById('lastTime').innerText = myRun.last_time;
+                    document.getElementById('bestTime').innerText = myRun.best_time;
+                    document.getElementById('posInfo').innerText = `POS: ${myRun.pos} | LAP: ${myRun.total_laps}`;
+                    
+                    // Αν έκανες νέο best, άλλαξε χρώμα για λίγο
+                    if(myRun.last_time === myRun.best_time) {
+                        document.getElementById('lastTime').style.color = "#ff00ff";
+                    } else {
+                        document.getElementById('lastTime').style.color = "#00ff00";
+                    }
+                }
+            } catch (e) {
+                console.error("Error fetching data", e);
+            }
+        }
+
+        function startTracking() {
+            targetName = document.getElementById('driverName').value;
+            if(!targetName) return alert("Βάλε όνομα!");
+            
+            document.getElementById('setup').style.display = 'none';
+            document.getElementById('dash').style.display = 'block';
+            
+            // Κλείδωμα οθόνης (Wake Lock)
+            if ('wakeLock' in navigator) {
+                navigator.wakeLock.request('screen').catch(console.error);
+            }
+
+            // Refresh κάθε 3 δευτερόλεπτα
+            setInterval(fetchData, 3000);
+            fetchData();
+        }
+    </script>
+</body>
+</html>
