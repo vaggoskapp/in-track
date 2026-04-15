@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Aston Kartin Dash - Fixed</title>
+    <title>Aston Kartin Dash - Final</title>
     <style>
         body, html {
             background-color: #000; color: #fff; margin: 0; padding: 0;
@@ -14,77 +14,81 @@
 
         #config {
             position: absolute; top: 0; width: 100%; background: #111; padding: 10px;
-            display: flex; justify-content: center; gap: 10px; z-index: 10;
+            display: flex; justify-content: center; gap: 8px; z-index: 100;
         }
-        input { background: #222; color: #fff; border: 1px solid #444; padding: 8px; border-radius: 4px; width: 100px; }
-        button { background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        input { background: #222; color: #fff; border: 1px solid #444; padding: 10px; border-radius: 5px; width: 90px; }
+        button { background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
 
-        /* ΔΙΟΡΘΩΣΗ ΓΙΑ ΤΟ ΜΕΓΕΘΟΣ */
+        /* ΣΤΑΘΕΡΟ ΜΕΓΕΘΟΣ ΓΙΑ 5-7 ΨΗΦΙΑ */
         #lastTime {
-            font-size: 32vw; /* Μειώθηκε λίγο για να χωράει το 1:00.000 */
+            font-size: 24vw; /* Σταθερό πλάτος για να χωράει το 1:00.000 */
             line-height: 1; margin: 0; color: #28a745;
-            text-align: center;
-            width: 100%;
-            display: flex; justify-content: center;
-            white-space: nowrap; /* Απαγορεύει την αλλαγή γραμμής */
+            white-space: nowrap; letter-spacing: -2px;
         }
 
-        #status { font-size: 5vw; text-transform: uppercase; color: #444; margin-bottom: -10px; }
-        #driverNameDisp { position: absolute; bottom: 20px; font-size: 4vw; color: #222; text-transform: uppercase; }
+        #status { font-size: 5vw; text-transform: uppercase; color: #444; margin-bottom: 0; }
+        #driverNameDisp { position: absolute; bottom: 20px; font-size: 4vw; color: #333; text-transform: uppercase; }
 
-        /* Landscape Mode: Προσαρμογή μεγέθους για να χωράει τα πάντα */
         @media screen and (orientation: landscape) {
-            #lastTime { font-size: 55vh; }
+            #lastTime { font-size: 50vh; } /* Σταθερό ύψος για οριζόντια οθόνη */
         }
     </style>
 </head>
 <body>
 
     <div id="config">
-        <input type="text" id="track" value="speedforce" placeholder="Slug">
-        <input type="text" id="team" value="Aston Kartin" placeholder="Team">
-        <button onclick="startDash()">START</button>
+        <input type="text" id="track" value="speedforce">
+        <input type="text" id="team" value="Aston Kartin">
+        <button id="startBtn">START DASH</button>
     </div>
 
     <div id="status">READY</div>
-    <div id="lastTime">0.00</div>
+    <div id="lastTime">00.000</div>
     <div id="driverNameDisp">---</div>
+
+    <video id="noSleepVideo" loop playsinline muted style="position:absolute; width:1px; height:1px; opacity:0.01;">
+        <source src="https://raw.githubusercontent.com/anars/NoSleep.js/master/media/blank.mp4" type="video/mp4">
+    </video>
 
     <script>
         let trackName = "speedforce";
         let teamName = "Aston Kartin";
-        let lastTimeValue = "";
+        const PROXY_URL = "https://corsproxy.io/?";
+        const video = document.getElementById('noSleepVideo');
         let wakeLock = null;
 
-        const PROXY_URL = "https://corsproxy.io/?";
-
-        // Λειτουργία για να κρατάει την οθόνη ανοιχτή
-        async function requestWakeLock() {
+        // Λειτουργία για Wake Lock
+        async function enableWakeLock() {
             try {
                 if ('wakeLock' in navigator) {
                     wakeLock = await navigator.wakeLock.request('screen');
-                    console.log('Wake Lock is active');
+                    console.log("WakeLock Active");
                 }
             } catch (err) {
-                console.error(`${err.name}, ${err.message}`);
+                console.log("WakeLock Failed");
             }
         }
 
-        function startDash() {
+        document.getElementById('startBtn').addEventListener('click', function() {
             trackName = document.getElementById('track').value.trim();
             teamName = document.getElementById('team').value.trim();
-            document.getElementById('config').style.display = "none";
             
-            requestWakeLock(); // Ενεργοποίηση με το START
+            // ΕΝΕΡΓΟΠΟΙΗΣΗ ΠΡΟΣΤΑΣΙΑΣ ΟΘΟΝΗΣ
+            video.play(); // Το βίντεο "ξεγελάει" το σύστημα
+            enableWakeLock(); // Το API κλειδώνει την οθόνη
+            
+            document.getElementById('config').style.display = "none";
+            document.getElementById('startBtn').style.backgroundColor = "#555";
             
             update();
             setInterval(update, 1500);
-        }
+        });
 
-        // Αν ο χρήστης αλλάξει tab και ξαναγυρίσει, ξαναζήτα το Wake Lock
-        document.addEventListener('visibilitychange', async () => {
-            if (wakeLock !== null && document.visibilityState === 'visible') {
-                requestWakeLock();
+        // Αν ο χρήστης βγει και ξαναμπεί στον browser, ξανακλείδωσε την οθόνη
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && trackName !== "") {
+                enableWakeLock();
+                video.play();
             }
         });
 
@@ -96,28 +100,11 @@
             try {
                 const response = await fetch(finalUrl);
                 const data = await response.json();
-                const myData = data.data.runs.find(p => 
-                    p.name.toLowerCase().includes(teamName.toLowerCase())
-                );
+                const myData = data.data.runs.find(p => p.name.toLowerCase().includes(teamName.toLowerCase()));
 
                 if (myData) {
                     const timeEl = document.getElementById('lastTime');
-                    const newTime = myData.last_time || "0.00";
-
-                    // Δυναμική μείωση μεγέθους αν ο χρόνος είναι μεγάλος (π.χ. 1:05.123)
-                    if (newTime.length > 6) {
-                        timeEl.style.fontSize = window.innerWidth > window.innerHeight ? "45vh" : "25vw";
-                    } else {
-                        timeEl.style.fontSize = window.innerWidth > window.innerHeight ? "55vh" : "32vw";
-                    }
-
-                    if (newTime !== lastTimeValue) {
-                        timeEl.style.opacity = "0.5";
-                        setTimeout(() => timeEl.style.opacity = "1", 100);
-                        lastTimeValue = newTime;
-                    }
-
-                    timeEl.innerText = newTime;
+                    timeEl.innerText = myData.last_time || "0.000";
                     document.getElementById('driverNameDisp').innerText = myData.name;
                     
                     const isPit = myData.in_pit || String(myData.run_status).toLowerCase() === 'pit';
