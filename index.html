@@ -3,130 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Aston Kartin - Live</title>
+    <title>Aston Kartin Dash</title>
     <style>
         body, html {
-            background-color: #000;
-            color: #fff;
-            margin: 0; padding: 0;
-            height: 100%; width: 100%;
-            display: flex; flex-direction: column;
+            background-color: #000; color: #fff; margin: 0; padding: 0;
+            height: 100%; width: 100%; display: flex; flex-direction: column;
             justify-content: center; align-items: center;
-            font-family: 'Arial Black', sans-serif;
-            overflow: hidden;
+            font-family: 'Arial Black', sans-serif; overflow: hidden;
         }
 
-        /* Ρυθμίσεις στο πάνω μέρος */
         #config {
-            position: absolute; top: 0; width: 100%;
-            background: #111; padding: 10px;
-            display: flex; justify-content: center; gap: 10px;
-            z-index: 10; font-size: 12px;
+            position: absolute; top: 0; width: 100%; background: #111; padding: 10px;
+            display: flex; justify-content: center; gap: 10px; z-index: 10;
         }
-        input { background: #222; color: #fff; border: 1px solid #444; padding: 5px; border-radius: 4px; }
-        button { background: #28a745; color: white; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer; }
+        input { background: #222; color: #fff; border: 1px solid #444; padding: 8px; border-radius: 4px; width: 100px; }
+        button { background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
 
-        /* Ο Χρόνος */
         #lastTime {
-            font-size: 45vw; /* Τεράστια γράμματα */
-            line-height: 1;
-            margin: 0;
-            color: #28a745;
-            transition: color 0.3s ease;
+            font-size: 45vw; line-height: 1; margin: 0; color: #28a745;
+            transition: opacity 0.1s ease;
         }
 
-        #status {
-            font-size: 5vw;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: -20px;
-            color: #888;
-        }
+        #status { font-size: 5vw; text-transform: uppercase; color: #444; margin-bottom: -10px; }
+        #driverNameDisp { position: absolute; bottom: 20px; font-size: 4vw; color: #222; text-transform: uppercase; }
 
-        #driverNameDisp {
-            position: absolute; bottom: 20px;
-            font-size: 4vw; color: #444;
-        }
-
-        /* Landscape Mode για το κινητό */
         @media screen and (orientation: landscape) {
-            #lastTime { font-size: 60vh; }
-            #status { font-size: 5vh; }
+            #lastTime { font-size: 65vh; }
         }
     </style>
 </head>
 <body>
 
     <div id="config">
-        <input type="text" id="track" value="sofiakarting" placeholder="Track Slug">
-        <input type="text" id="team" value="Aston Kartin" placeholder="Team Name">
-        <button onclick="applySettings()">START</button>
+        <input type="text" id="track" value="speedforce" placeholder="Slug">
+        <input type="text" id="team" value="Aston Kartin" placeholder="Team">
+        <button onclick="startDash()">START</button>
     </div>
 
-    <div id="status">CONNECTING</div>
+    <div id="status">READY</div>
     <div id="lastTime">0.00</div>
-    <div id="driverNameDisp">WAITING...</div>
+    <div id="driverNameDisp">---</div>
 
     <script>
-        let trackName = "sofiakarting";
+        let trackName = "speedforce";
         let teamName = "Aston Kartin";
-        
-        // Χρησιμοποιούμε τον Proxy για να μην έχουμε CORS errors στο browser
-        const PROXY = "https://api.allorigins.win/raw?url=";
+        let lastTimeValue = "";
 
-        function applySettings() {
-            trackName = document.getElementById('track').value;
-            teamName = document.getElementById('team').value;
-            document.getElementById('config').style.opacity = "0.2"; // Θολώνει για να μην ενοχλεί
+        // Χρησιμοποιούμε τον corsproxy.io που είναι συχνά πιο γρήγορος
+        const PROXY_URL = "https://corsproxy.io/?";
+
+        function startDash() {
+            trackName = document.getElementById('track').value.trim();
+            teamName = document.getElementById('team').value.trim();
+            document.getElementById('config').style.display = "none";
+            
             update();
+            setInterval(update, 1500); // Χτύπημα κάθε 1.5 δευτερόλεπτο
         }
 
         async function update() {
-            const apiUrl = `https://live.racefacer.com/ajax/live-data?slug=${trackName}`;
-            
+            // Διπλό cache-busting: ένα για τον Proxy και ένα για τη RaceFacer
+            const timestamp = Date.now();
+            const targetUrl = `https://live.racefacer.com/ajax/live-data?slug=${trackName}&nocache=${timestamp}`;
+            const finalUrl = `${PROXY_URL}${encodeURIComponent(targetUrl)}`;
+
             try {
-                const response = await fetch(PROXY + encodeURIComponent(apiUrl + "&t=" + Date.now()));
+                const response = await fetch(finalUrl);
                 if (!response.ok) throw new Error();
                 
                 const data = await response.json();
-                const participants = data.data.runs || [];
-
-                // Αναζήτηση της ομάδας
-                const myData = participants.find(p => 
+                const myData = data.data.runs.find(p => 
                     p.name.toLowerCase().includes(teamName.toLowerCase())
                 );
 
-                const timeEl = document.getElementById('lastTime');
-                const statusEl = document.getElementById('status');
-                const nameEl = document.getElementById('driverNameDisp');
-
                 if (myData) {
-                    timeEl.innerText = myData.last_time || "0.00";
-                    nameEl.innerText = myData.name.toUpperCase();
-                    
-                    // Έλεγχος αν είναι στα Pits
-                    const isPit = myData.in_pit || String(myData.run_status).toLowerCase() === 'pit';
-                    if (isPit) {
-                        statusEl.innerText = "IN PIT";
-                        timeEl.style.color = "#444";
-                    } else {
-                        statusEl.innerText = "LIVE LAP";
-                        timeEl.style.color = "#28a745";
+                    const timeEl = document.getElementById('lastTime');
+                    const newTime = myData.last_time || "0.00";
+
+                    // Αν άλλαξε ο χρόνος, κάνε ένα στιγμιαίο φλας για επιβεβαίωση
+                    if (newTime !== lastTimeValue) {
+                        timeEl.style.opacity = "0.5";
+                        setTimeout(() => timeEl.style.opacity = "1", 100);
+                        lastTimeValue = newTime;
                     }
-                } else {
-                    statusEl.innerText = "SEARCHING...";
-                    timeEl.innerText = "---";
-                    nameEl.innerText = teamName.toUpperCase() + " NOT FOUND";
+
+                    timeEl.innerText = newTime;
+                    document.getElementById('driverNameDisp').innerText = myData.name;
+                    
+                    const isPit = myData.in_pit || String(myData.run_status).toLowerCase() === 'pit';
+                    document.getElementById('status').innerText = isPit ? "IN PIT" : "LIVE LAP";
+                    timeEl.style.color = isPit ? "#333" : "#28a745";
                 }
             } catch (e) {
-                document.getElementById('status').innerText = "SYNC ERROR";
+                document.getElementById('status').innerText = "RECONNECTING...";
             }
         }
 
-        // Κάθε 2 δευτερόλεπτα (όπως το REFRESH_RATE στην Python σου)
-        setInterval(update, 2000);
-        
-        // Wake Lock για να μην σβήνει η οθόνη του κινητού
         if ('wakeLock' in navigator) {
             navigator.wakeLock.request('screen').catch(() => {});
         }
