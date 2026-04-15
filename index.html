@@ -3,102 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kart Minimal Dash</title>
+    <title>Universal Kart Dash</title>
     <style>
-        /* Βασικό στυλ: Μαύρο φόντο και κεντράρισμα */
         body, html {
             background-color: #000;
-            color: #00ff00; /* Πράσινο "matrix" */
+            color: #00ff00;
             font-family: 'Arial Black', sans-serif;
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
             overflow: hidden;
         }
 
         #setup { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 15px; 
-            z-index: 10;
+            display: flex; flex-direction: column; gap: 15px; z-index: 10; width: 80%; max-width: 300px;
         }
-        input { padding: 15px; font-size: 1.2rem; border-radius: 8px; border: none; text-align: center; }
-        button { padding: 15px; font-size: 1.2rem; background: #29abe1; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        .input-group { display: flex; flex-direction: column; gap: 5px; }
+        label { color: #888; font-size: 0.8rem; text-transform: uppercase; }
+        input { padding: 15px; font-size: 1.1rem; border-radius: 8px; border: 1px solid #333; background: #111; color: #fff; text-align: center; }
+        button { padding: 15px; font-size: 1.2rem; background: #29abe1; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; }
 
-        /* Το Dashboard που δείχνει ΜΟΝΟ τον χρόνο */
         #dash {
-            display: none;
-            width: 100vw;
-            height: 100vh;
-            text-align: center;
+            display: none; width: 100vw; height: 100vh; text-align: center;
+            flex-direction: column; justify-content: center;
         }
 
-        /* Ο χρόνος θα παίρνει όλο το διαθέσιμο ύψος/πλάτος */
         #lastTime {
-            font-size: 35vw; /* Πολύ μεγάλο μέγεθος βάσει πλάτους */
-            line-height: 100vh; /* Κεντράρισμα καθ' ύψος */
-            white-space: nowrap;
+            font-size: 35vw; line-height: 1; white-space: nowrap;
         }
 
-        /* Ρύθμιση για όταν γυρνάει το κινητό πλάγια (Landscape) */
+        .status-bar { font-size: 4vw; color: #444; margin-top: 20px; font-family: sans-serif; }
+
         @media screen and (orientation: landscape) {
-            #lastTime {
-                font-size: 45vh; /* Ακόμα μεγαλύτερο όταν είναι πλάγια */
-            }
+            #lastTime { font-size: 50vh; }
+            .status-bar { font-size: 3vh; }
         }
     </style>
 </head>
 <body>
 
     <div id="setup">
-        <input type="text" id="driverName" placeholder="Όνομα Οδηγού" value="Markos Saridis">
-        <button onclick="startTracking()">START TRACKING</button>
+        <div class="input-group">
+            <label>Track ID (Slug)</label>
+            <input type="text" id="trackSlug" placeholder="π.χ. speedforce2" value="speedforce2">
+        </div>
+        <div class="input-group">
+            <label>Driver Name</label>
+            <input type="text" id="driverName" placeholder="π.χ. Markos Saridis" value="Markos Saridis">
+        </div>
+        <button onclick="startTracking()">START DASH</button>
     </div>
 
     <div id="dash">
         <div id="lastTime">--.---</div>
+        <div id="statusBar" class="status-bar">CONNECTING...</div>
     </div>
 
     <script>
         let targetName = "";
-        const apiUrl = "https://live.racefacer.com/ajax/live-data?slug=speedforce2";
+        let trackSlug = "";
         const proxy = "https://api.allorigins.win/get?url=";
 
         async function fetchData() {
+            const apiUrl = `https://live.racefacer.com/ajax/live-data?slug=${trackSlug}`;
+            
             try {
                 const response = await fetch(proxy + encodeURIComponent(apiUrl));
                 const json = await response.json();
                 const data = JSON.parse(json.contents);
                 
-                const myRun = data.data.runs.find(r => r.name.toLowerCase().includes(targetName.toLowerCase()));
+                const myRun = data.data.runs.find(r => 
+                    r.name.toLowerCase().includes(targetName.toLowerCase()) || 
+                    r.kart === targetName
+                );
+
+                const display = document.getElementById('lastTime');
+                const statusBar = document.getElementById('statusBar');
 
                 if (myRun) {
-                    // Δείχνουμε μόνο το last_time
-                    document.getElementById('lastTime').innerText = myRun.last_time;
+                    display.innerText = myRun.last_time;
+                    display.style.color = "#00ff00";
+                    statusBar.innerText = `TRACK: ${trackSlug.toUpperCase()} | KART: ${myRun.kart} | POS: ${myRun.pos}`;
+                } else {
+                    display.innerText = "WAITING";
+                    display.style.color = "#ff4444";
+                    statusBar.innerText = `SEARCHING FOR "${targetName.toUpperCase()}" IN ${trackSlug.toUpperCase()}...`;
                 }
             } catch (e) {
-                console.error("Error fetching data", e);
+                console.error("Error:", e);
+                document.getElementById('statusBar').innerText = "CONNECTION ERROR - RETRYING...";
             }
         }
 
         function startTracking() {
             targetName = document.getElementById('driverName').value;
-            if(!targetName) return alert("Βάλε όνομα!");
+            trackSlug = document.getElementById('trackSlug').value;
+            
+            if(!targetName || !trackSlug) return alert("Συμπλήρωσε και τα δύο πεδία!");
             
             document.getElementById('setup').style.display = 'none';
-            document.getElementById('dash').style.display = 'flex'; // Χρήση flex για κεντράρισμα
+            document.getElementById('dash').style.display = 'flex';
             
-            // Κρατάμε την οθόνη ανοιχτή
             if ('wakeLock' in navigator) {
                 navigator.wakeLock.request('screen').catch(console.error);
             }
 
-            // Ανανέωση κάθε 2 δευτερόλεπτα για μεγαλύτερη ταχύτητα
-            setInterval(fetchData, 2000);
+            setInterval(fetchData, 2500);
             fetchData();
         }
     </script>
