@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Aston Kartin Dash</title>
+    <title>Aston Kartin Dash - Fixed</title>
     <style>
         body, html {
             background-color: #000; color: #fff; margin: 0; padding: 0;
@@ -19,16 +19,22 @@
         input { background: #222; color: #fff; border: 1px solid #444; padding: 8px; border-radius: 4px; width: 100px; }
         button { background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
 
+        /* ΔΙΟΡΘΩΣΗ ΓΙΑ ΤΟ ΜΕΓΕΘΟΣ */
         #lastTime {
-            font-size: 45vw; line-height: 1; margin: 0; color: #28a745;
-            transition: opacity 0.1s ease;
+            font-size: 32vw; /* Μειώθηκε λίγο για να χωράει το 1:00.000 */
+            line-height: 1; margin: 0; color: #28a745;
+            text-align: center;
+            width: 100%;
+            display: flex; justify-content: center;
+            white-space: nowrap; /* Απαγορεύει την αλλαγή γραμμής */
         }
 
         #status { font-size: 5vw; text-transform: uppercase; color: #444; margin-bottom: -10px; }
         #driverNameDisp { position: absolute; bottom: 20px; font-size: 4vw; color: #222; text-transform: uppercase; }
 
+        /* Landscape Mode: Προσαρμογή μεγέθους για να χωράει τα πάντα */
         @media screen and (orientation: landscape) {
-            #lastTime { font-size: 65vh; }
+            #lastTime { font-size: 55vh; }
         }
     </style>
 </head>
@@ -48,29 +54,47 @@
         let trackName = "speedforce";
         let teamName = "Aston Kartin";
         let lastTimeValue = "";
+        let wakeLock = null;
 
-        // Χρησιμοποιούμε τον corsproxy.io που είναι συχνά πιο γρήγορος
         const PROXY_URL = "https://corsproxy.io/?";
+
+        // Λειτουργία για να κρατάει την οθόνη ανοιχτή
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Wake Lock is active');
+                }
+            } catch (err) {
+                console.error(`${err.name}, ${err.message}`);
+            }
+        }
 
         function startDash() {
             trackName = document.getElementById('track').value.trim();
             teamName = document.getElementById('team').value.trim();
             document.getElementById('config').style.display = "none";
             
+            requestWakeLock(); // Ενεργοποίηση με το START
+            
             update();
-            setInterval(update, 1500); // Χτύπημα κάθε 1.5 δευτερόλεπτο
+            setInterval(update, 1500);
         }
 
+        // Αν ο χρήστης αλλάξει tab και ξαναγυρίσει, ξαναζήτα το Wake Lock
+        document.addEventListener('visibilitychange', async () => {
+            if (wakeLock !== null && document.visibilityState === 'visible') {
+                requestWakeLock();
+            }
+        });
+
         async function update() {
-            // Διπλό cache-busting: ένα για τον Proxy και ένα για τη RaceFacer
             const timestamp = Date.now();
             const targetUrl = `https://live.racefacer.com/ajax/live-data?slug=${trackName}&nocache=${timestamp}`;
             const finalUrl = `${PROXY_URL}${encodeURIComponent(targetUrl)}`;
 
             try {
                 const response = await fetch(finalUrl);
-                if (!response.ok) throw new Error();
-                
                 const data = await response.json();
                 const myData = data.data.runs.find(p => 
                     p.name.toLowerCase().includes(teamName.toLowerCase())
@@ -80,7 +104,13 @@
                     const timeEl = document.getElementById('lastTime');
                     const newTime = myData.last_time || "0.00";
 
-                    // Αν άλλαξε ο χρόνος, κάνε ένα στιγμιαίο φλας για επιβεβαίωση
+                    // Δυναμική μείωση μεγέθους αν ο χρόνος είναι μεγάλος (π.χ. 1:05.123)
+                    if (newTime.length > 6) {
+                        timeEl.style.fontSize = window.innerWidth > window.innerHeight ? "45vh" : "25vw";
+                    } else {
+                        timeEl.style.fontSize = window.innerWidth > window.innerHeight ? "55vh" : "32vw";
+                    }
+
                     if (newTime !== lastTimeValue) {
                         timeEl.style.opacity = "0.5";
                         setTimeout(() => timeEl.style.opacity = "1", 100);
@@ -97,10 +127,6 @@
             } catch (e) {
                 document.getElementById('status').innerText = "RECONNECTING...";
             }
-        }
-
-        if ('wakeLock' in navigator) {
-            navigator.wakeLock.request('screen').catch(() => {});
         }
     </script>
 </body>
