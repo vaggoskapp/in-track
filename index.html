@@ -3,101 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Aston Kartin Dash Pro</title>
+    <title>Aston Kartin Dash Fix</title>
     <style>
-        body, html {
-            background-color: #0d0e10;
-            color: #ffffff;
-            font-family: 'Arial Black', sans-serif;
-            margin: 0; padding: 0;
-            width: 100%; height: 100%;
-            display: flex; align-items: center; justify-content: center;
-            overflow: hidden;
-        }
-
-        /* Setup Panel */
-        #setup { 
-            display: flex; flex-direction: column; gap: 15px; width: 85%; max-width: 350px;
-            background: #1a1c1e; padding: 25px; border-radius: 15px; border-left: 5px solid #29abe1;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-        .input-group { display: flex; flex-direction: column; gap: 5px; }
-        label { color: #888; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; }
-        input { 
-            padding: 12px; border-radius: 5px; border: 1px solid #333; 
-            background: #000; color: #fff; font-size: 1rem;
-        }
-        button { 
-            padding: 18px; background: #28a745; color: white; border: none; 
-            border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 1.1rem;
-            margin-top: 10px;
-        }
-
-        /* Dash Panel */
-        #dash {
-            display: none; width: 100vw; height: 100vh;
-            flex-direction: column; justify-content: center; align-items: center;
-            text-align: center;
-        }
-
-        #lastTime {
-            font-size: 38vw; font-weight: 900; line-height: 0.8;
-            margin: 0; transition: color 0.3s ease;
-        }
-
-        .status-badge {
-            padding: 8px 20px; border-radius: 30px; font-size: 4vw;
-            font-weight: bold; margin-bottom: 20px; text-transform: uppercase;
-        }
-        
-        .on-track { background: #28a745; color: white; border: 2px solid #28a745; }
-        .in-pit { background: #dc3545; color: white; border: 2px solid #dc3545; }
-        .searching { background: #444; color: white; border: 2px solid #666; }
-
-        .info-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 30px;
-            width: 90%; margin-top: 20px;
-        }
+        body, html { background-color: #0d0e10; color: #ffffff; font-family: 'Arial Black', sans-serif; margin: 0; padding: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        #setup { display: flex; flex-direction: column; gap: 15px; width: 85%; max-width: 350px; background: #1a1c1e; padding: 25px; border-radius: 15px; border-left: 5px solid #29abe1; }
+        input { padding: 12px; border-radius: 5px; border: 1px solid #333; background: #000; color: #fff; font-size: 1rem; }
+        button { padding: 18px; background: #28a745; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        #dash { display: none; width: 100vw; height: 100vh; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        #lastTime { font-size: 38vw; font-weight: 900; line-height: 0.8; margin: 0; color: #28a745; }
+        .status-badge { padding: 8px 20px; border-radius: 30px; font-size: 4vw; font-weight: bold; margin-bottom: 20px; text-transform: uppercase; background: #444; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; width: 90%; margin-top: 20px; }
         .val { color: #fff; font-weight: bold; display: block; font-size: 8vw; }
         .label-text { color: #666; font-size: 3vw; text-transform: uppercase; }
-
-        /* Landscape Mode */
-        @media screen and (orientation: landscape) {
-            #lastTime { font-size: 60vh; }
-            .info-grid { margin-top: 5px; }
-            .val { font-size: 7vh; }
-            .status-badge { font-size: 4vh; margin-bottom: 5px; }
-        }
     </style>
 </head>
 <body>
 
     <div id="setup">
-        <h2 style="margin:0 0 10px 0; color:#29abe1; text-align:center;">🏁 KART STRATEGY</h2>
-        <div class="input-group">
-            <label>Track Slug</label>
-            <input type="text" id="trackSlug" value="sofiakarting">
-        </div>
-        <div class="input-group">
-            <label>Team/Driver Name</label>
-            <input type="text" id="driverName" value="Aston Kartin">
-        </div>
+        <h2 style="color:#29abe1; text-align:center;">🏁 STRATEGY HUB</h2>
+        <input type="text" id="trackSlug" value="sofiakarting">
+        <input type="text" id="driverName" value="Aston Kartin">
         <button onclick="startTracking()">START LIVE DASH</button>
     </div>
 
     <div id="dash">
-        <div id="status" class="status-badge searching">CONNECTING...</div>
+        <div id="status" class="status-badge">CONNECTING...</div>
         <div id="lastTime">--.---</div>
-        
         <div class="info-grid">
-            <div class="info-item">
-                <span class="label-text">Best Lap</span>
-                <span id="bestTime" class="val">--.---</span>
-            </div>
-            <div class="info-item">
-                <span class="label-text">Position</span>
-                <span id="pos" class="val">-</span>
-            </div>
+            <div><span class="label-text">Best Lap</span><span id="bestTime" class="val">--.---</span></div>
+            <div><span class="label-text">Position</span><span id="pos" class="val">-</span></div>
         </div>
     </div>
 
@@ -105,81 +39,61 @@
         let targetName = "";
         let trackSlug = "";
         
-        // Χρησιμοποιούμε το 'raw' proxy για καθαρό JSON
-        const proxy = "https://api.allorigins.win/raw?url=";
+        // ΑΛΛΑΓΗ PROXY: Χρησιμοποιούμε τον CORSProxy.io που είναι πιο σταθερός
+        const proxy = "https://corsproxy.io/?";
 
         async function updateDashboard() {
             const apiUrl = `https://live.racefacer.com/ajax/live-data?slug=${trackSlug}`;
             
             try {
-                const response = await fetch(proxy + encodeURIComponent(apiUrl));
+                // Προσθέτουμε ένα timestamp στο τέλος για να μην παίρνουμε παλιά δεδομένα (cache)
+                const finalUrl = proxy + encodeURIComponent(apiUrl + "&t=" + Date.now());
                 
-                if (!response.ok) throw new Error("Proxy response not ok");
-                
+                const response = await fetch(finalUrl);
                 const data = await response.json();
                 
                 if (data && data.data && data.data.runs) {
                     const participants = data.data.runs;
-                    const timeEl = document.getElementById('lastTime');
-                    const statusEl = document.getElementById('status');
-                    const bestEl = document.getElementById('bestTime');
-                    const posEl = document.getElementById('pos');
-
                     const myData = participants.find(p => {
                         const n = p.name.toLowerCase();
                         const t = targetName.toLowerCase().trim();
                         return n.includes(t) || p.kart === t;
                     });
 
+                    const timeEl = document.getElementById('lastTime');
+                    const statusEl = document.getElementById('status');
+
                     if (myData) {
                         timeEl.innerText = myData.last_time || "0.000";
-                        bestEl.innerText = myData.best_time || "--.---";
-                        posEl.innerText = myData.pos || "-";
+                        document.getElementById('bestTime').innerText = myData.best_time || "--.---";
+                        document.getElementById('pos').innerText = myData.pos || "-";
 
-                        // Status Logic (Pit vs Track)
-                        const isPit = myData.in_pit || String(myData.run_status).toLowerCase() === 'pit';
-                        
-                        if (isPit) {
-                            statusEl.innerText = "🔴 IN PIT";
-                            statusEl.className = "status-badge in-pit";
-                            timeEl.style.color = "#444";
-                        } else {
-                            statusEl.innerText = "🟢 TRACK LIVE";
-                            statusEl.className = "status-badge on-track";
-                            timeEl.style.color = "#28a745";
-                        }
+                        const isPit = myTeamInPit(myData);
+                        statusEl.innerText = isPit ? "🔴 IN PIT" : "🟢 TRACK LIVE";
+                        statusEl.style.background = isPit ? "#dc3545" : "#28a745";
+                        timeEl.style.color = isPit ? "#444" : "#28a745";
                     } else {
                         statusEl.innerText = "SEARCHING FOR " + targetName.toUpperCase();
-                        statusEl.className = "status-badge searching";
-                        timeEl.innerText = "---";
+                        statusEl.style.background = "#444";
                     }
                 } else {
                     document.getElementById('status').innerText = "NO ACTIVE SESSION";
-                    document.getElementById('status').className = "status-badge searching";
-                    document.getElementById('lastTime').innerText = "EMPTY";
                 }
             } catch (e) {
-                console.error("Sync Error:", e);
-                document.getElementById('status').innerText = "SYNC ERROR / OFFLINE";
-                document.getElementById('status').className = "status-badge searching";
+                document.getElementById('status').innerText = "SYNC ERROR - RETRYING...";
             }
+        }
+
+        function myTeamInPit(p) {
+            return p.in_pit || String(p.run_status).toLowerCase() === 'pit';
         }
 
         function startTracking() {
             targetName = document.getElementById('driverName').value;
             trackSlug = document.getElementById('trackSlug').value;
-            
-            if(!targetName || !trackSlug) return alert("Fill all fields!");
-
             document.getElementById('setup').style.display = 'none';
             document.getElementById('dash').style.display = 'flex';
-            
-            // Κρατάει την οθόνη ανοιχτή
-            if ('wakeLock' in navigator) {
-                navigator.wakeLock.request('screen').catch(() => {});
-            }
-
-            // Refresh κάθε 2.5 δευτερόλεπτα
+            if ('wakeLock' in navigator) navigator.wakeLock.request('screen');
             setInterval(updateDashboard, 2500);
             updateDashboard();
         }
