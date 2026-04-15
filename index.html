@@ -3,99 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Aston Kartin Dash Fix</title>
+    <title>Aston Kartin - Live</title>
     <style>
-        body, html { background-color: #0d0e10; color: #ffffff; font-family: 'Arial Black', sans-serif; margin: 0; padding: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        #setup { display: flex; flex-direction: column; gap: 15px; width: 85%; max-width: 350px; background: #1a1c1e; padding: 25px; border-radius: 15px; border-left: 5px solid #29abe1; }
-        input { padding: 12px; border-radius: 5px; border: 1px solid #333; background: #000; color: #fff; font-size: 1rem; }
-        button { padding: 18px; background: #28a745; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
-        #dash { display: none; width: 100vw; height: 100vh; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-        #lastTime { font-size: 38vw; font-weight: 900; line-height: 0.8; margin: 0; color: #28a745; }
-        .status-badge { padding: 8px 20px; border-radius: 30px; font-size: 4vw; font-weight: bold; margin-bottom: 20px; text-transform: uppercase; background: #444; }
-        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; width: 90%; margin-top: 20px; }
-        .val { color: #fff; font-weight: bold; display: block; font-size: 8vw; }
-        .label-text { color: #666; font-size: 3vw; text-transform: uppercase; }
+        body, html {
+            background-color: #000;
+            color: #fff;
+            margin: 0; padding: 0;
+            height: 100%; width: 100%;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            font-family: 'Arial Black', sans-serif;
+            overflow: hidden;
+        }
+
+        /* Ρυθμίσεις στο πάνω μέρος */
+        #config {
+            position: absolute; top: 0; width: 100%;
+            background: #111; padding: 10px;
+            display: flex; justify-content: center; gap: 10px;
+            z-index: 10; font-size: 12px;
+        }
+        input { background: #222; color: #fff; border: 1px solid #444; padding: 5px; border-radius: 4px; }
+        button { background: #28a745; color: white; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer; }
+
+        /* Ο Χρόνος */
+        #lastTime {
+            font-size: 45vw; /* Τεράστια γράμματα */
+            line-height: 1;
+            margin: 0;
+            color: #28a745;
+            transition: color 0.3s ease;
+        }
+
+        #status {
+            font-size: 5vw;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: -20px;
+            color: #888;
+        }
+
+        #driverNameDisp {
+            position: absolute; bottom: 20px;
+            font-size: 4vw; color: #444;
+        }
+
+        /* Landscape Mode για το κινητό */
+        @media screen and (orientation: landscape) {
+            #lastTime { font-size: 60vh; }
+            #status { font-size: 5vh; }
+        }
     </style>
 </head>
 <body>
 
-    <div id="setup">
-        <h2 style="color:#29abe1; text-align:center;">🏁 STRATEGY HUB</h2>
-        <input type="text" id="trackSlug" value="sofiakarting">
-        <input type="text" id="driverName" value="Aston Kartin">
-        <button onclick="startTracking()">START LIVE DASH</button>
+    <div id="config">
+        <input type="text" id="track" value="sofiakarting" placeholder="Track Slug">
+        <input type="text" id="team" value="Aston Kartin" placeholder="Team Name">
+        <button onclick="applySettings()">START</button>
     </div>
 
-    <div id="dash">
-        <div id="status" class="status-badge">CONNECTING...</div>
-        <div id="lastTime">--.---</div>
-        <div class="info-grid">
-            <div><span class="label-text">Best Lap</span><span id="bestTime" class="val">--.---</span></div>
-            <div><span class="label-text">Position</span><span id="pos" class="val">-</span></div>
-        </div>
-    </div>
+    <div id="status">CONNECTING</div>
+    <div id="lastTime">0.00</div>
+    <div id="driverNameDisp">WAITING...</div>
 
     <script>
-        let targetName = "";
-        let trackSlug = "";
+        let trackName = "sofiakarting";
+        let teamName = "Aston Kartin";
         
-        // ΑΛΛΑΓΗ PROXY: Χρησιμοποιούμε τον CORSProxy.io που είναι πιο σταθερός
-        const proxy = "https://corsproxy.io/?";
+        // Χρησιμοποιούμε τον Proxy για να μην έχουμε CORS errors στο browser
+        const PROXY = "https://api.allorigins.win/raw?url=";
 
-        async function updateDashboard() {
-            const apiUrl = `https://live.racefacer.com/ajax/live-data?slug=${trackSlug}`;
+        function applySettings() {
+            trackName = document.getElementById('track').value;
+            teamName = document.getElementById('team').value;
+            document.getElementById('config').style.opacity = "0.2"; // Θολώνει για να μην ενοχλεί
+            update();
+        }
+
+        async function update() {
+            const apiUrl = `https://live.racefacer.com/ajax/live-data?slug=${trackName}`;
             
             try {
-                // Προσθέτουμε ένα timestamp στο τέλος για να μην παίρνουμε παλιά δεδομένα (cache)
-                const finalUrl = proxy + encodeURIComponent(apiUrl + "&t=" + Date.now());
+                const response = await fetch(PROXY + encodeURIComponent(apiUrl + "&t=" + Date.now()));
+                if (!response.ok) throw new Error();
                 
-                const response = await fetch(finalUrl);
                 const data = await response.json();
-                
-                if (data && data.data && data.data.runs) {
-                    const participants = data.data.runs;
-                    const myData = participants.find(p => {
-                        const n = p.name.toLowerCase();
-                        const t = targetName.toLowerCase().trim();
-                        return n.includes(t) || p.kart === t;
-                    });
+                const participants = data.data.runs || [];
 
-                    const timeEl = document.getElementById('lastTime');
-                    const statusEl = document.getElementById('status');
+                // Αναζήτηση της ομάδας
+                const myData = participants.find(p => 
+                    p.name.toLowerCase().includes(teamName.toLowerCase())
+                );
 
-                    if (myData) {
-                        timeEl.innerText = myData.last_time || "0.000";
-                        document.getElementById('bestTime').innerText = myData.best_time || "--.---";
-                        document.getElementById('pos').innerText = myData.pos || "-";
+                const timeEl = document.getElementById('lastTime');
+                const statusEl = document.getElementById('status');
+                const nameEl = document.getElementById('driverNameDisp');
 
-                        const isPit = myTeamInPit(myData);
-                        statusEl.innerText = isPit ? "🔴 IN PIT" : "🟢 TRACK LIVE";
-                        statusEl.style.background = isPit ? "#dc3545" : "#28a745";
-                        timeEl.style.color = isPit ? "#444" : "#28a745";
+                if (myData) {
+                    timeEl.innerText = myData.last_time || "0.00";
+                    nameEl.innerText = myData.name.toUpperCase();
+                    
+                    // Έλεγχος αν είναι στα Pits
+                    const isPit = myData.in_pit || String(myData.run_status).toLowerCase() === 'pit';
+                    if (isPit) {
+                        statusEl.innerText = "IN PIT";
+                        timeEl.style.color = "#444";
                     } else {
-                        statusEl.innerText = "SEARCHING FOR " + targetName.toUpperCase();
-                        statusEl.style.background = "#444";
+                        statusEl.innerText = "LIVE LAP";
+                        timeEl.style.color = "#28a745";
                     }
                 } else {
-                    document.getElementById('status').innerText = "NO ACTIVE SESSION";
+                    statusEl.innerText = "SEARCHING...";
+                    timeEl.innerText = "---";
+                    nameEl.innerText = teamName.toUpperCase() + " NOT FOUND";
                 }
             } catch (e) {
-                document.getElementById('status').innerText = "SYNC ERROR - RETRYING...";
+                document.getElementById('status').innerText = "SYNC ERROR";
             }
         }
 
-        function myTeamInPit(p) {
-            return p.in_pit || String(p.run_status).toLowerCase() === 'pit';
-        }
-
-        function startTracking() {
-            targetName = document.getElementById('driverName').value;
-            trackSlug = document.getElementById('trackSlug').value;
-            document.getElementById('setup').style.display = 'none';
-            document.getElementById('dash').style.display = 'flex';
-            if ('wakeLock' in navigator) navigator.wakeLock.request('screen');
-            setInterval(updateDashboard, 2500);
-            updateDashboard();
+        // Κάθε 2 δευτερόλεπτα (όπως το REFRESH_RATE στην Python σου)
+        setInterval(update, 2000);
+        
+        // Wake Lock για να μην σβήνει η οθόνη του κινητού
+        if ('wakeLock' in navigator) {
+            navigator.wakeLock.request('screen').catch(() => {});
         }
     </script>
 </body>
