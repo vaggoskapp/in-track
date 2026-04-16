@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Aston Kartin Dash - Fixed Layout</title>
+    <title>Aston Kartin Dash - Manual Start</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <style>
@@ -16,7 +16,7 @@
 
         #config {
             position: absolute; top: 0; width: 100%; background: #111; padding: 10px;
-            display: flex; justify-content: center; gap: 8px; z-index: 100;
+            display: flex; justify-content: center; gap: 8px; z-index: 200;
         }
         input { background: #222; color: #fff; border: 1px solid #444; padding: 8px; border-radius: 5px; width: 90px; }
         .btn { border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
@@ -42,20 +42,24 @@
 
         #status { font-size: 12px; text-transform: uppercase; color: #222; margin-top: 5px; }
         #driverNameDisp { position: absolute; bottom: 10px; left: 15px; font-size: 12px; color: #111; }
-        #resetStintBtn { position: absolute; bottom: 10px; right: 10px; background: #111; color: #444; font-size: 10px; border: 1px solid #222; z-index: 101; }
+        
+        /* Start Stint Button */
+        #stintBtn { 
+            position: absolute; bottom: 15px; right: 15px; 
+            background: #007bff; color: #fff; font-size: 14px; 
+            border: none; display: none; z-index: 101; 
+            padding: 15px 25px; border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,123,255,0.4);
+        }
 
-        /* LANDSCAPE FIX: Εδώ διορθώνουμε το overlap */
         @media screen and (orientation: landscape) {
-            #lastTime { font-size: 52vh; } /* Μειώθηκε λίγο για να μην "καπελώνει" τα Gaps */
+            #lastTime { font-size: 52vh; }
             .gap { font-size: 10vh; }
-            
             #stintBox { top: 10px; left: 10px; }
             #stintTimer { font-size: 10vh; }
             #stintLabel { font-size: 3vh; }
-
             #posDisp { top: 5px; right: 10px; font-size: 12vh; }
-            
-            #resetStintBtn { bottom: 5px; right: 5px; padding: 12px; font-size: 12px; }
+            #stintBtn { bottom: 10px; right: 10px; padding: 20px 30px; font-size: 18px; }
         }
     </style>
 </head>
@@ -64,11 +68,11 @@
     <div id="config">
         <input type="text" id="track" value="speedforce">
         <input type="text" id="team" value="Aston Kartin">
-        <button id="startBtn" class="btn" style="background:#28a745; color:white;">START</button>
+        <button id="startDashBtn" class="btn" style="background:#28a745; color:white;">START DASH</button>
     </div>
 
     <div id="stintBox">
-        <div id="stintLabel">STINT</div>
+        <div id="stintLabel">STINT TIME</div>
         <div id="stintTimer">00:00</div>
     </div>
 
@@ -82,7 +86,8 @@
 
     <div id="status">READY</div>
     <div id="driverNameDisp">---</div>
-    <button id="resetStintBtn" class="btn" onclick="resetStint()">RESET STINT</button>
+    
+    <button id="stintBtn" class="btn" onclick="startStint()">START STINT</button>
 
     <video id="noSleepVideo" loop playsinline muted style="display:none;">
         <source src="https://raw.githubusercontent.com/anars/NoSleep.js/master/media/blank.mp4" type="video/mp4">
@@ -96,12 +101,16 @@
         let lastGapAhead = null;
         let lastGapBehind = null;
 
-        document.getElementById('startBtn').addEventListener('click', function() {
+        document.getElementById('startDashBtn').addEventListener('click', function() {
             trackName = document.getElementById('track').value.trim();
             teamName = document.getElementById('team').value.trim();
+            
             document.getElementById('config').style.display = "none";
+            document.getElementById('stintBtn').style.display = "block"; // Εμφανίζεται το κουμπί του Stint
+            
             document.getElementById('noSleepVideo').play();
             if ('wakeLock' in navigator) navigator.wakeLock.request('screen');
+            
             update();
             setInterval(update, 1500);
             setInterval(() => {
@@ -114,7 +123,17 @@
             }, 1000);
         });
 
-        function resetStint() { stintStartTime = Date.now(); }
+        // Η λειτουργία του κουμπιού START STINT
+        function startStint() { 
+            stintStartTime = Date.now(); 
+            // Αλλαγή κειμένου για να δείχνει ότι μπορεί να γίνει reset
+            document.getElementById('stintBtn').innerText = "RESET STINT";
+            document.getElementById('stintBtn').style.background = "#555";
+            
+            // Flash effect
+            document.getElementById('stintTimer').style.color = "#fff";
+            setTimeout(() => { document.getElementById('stintTimer').style.color = "#ffc107"; }, 200);
+        }
 
         async function update() {
             const timestamp = Date.now();
@@ -134,7 +153,6 @@
                     document.getElementById('posDisp').innerText = `P${myIndex + 1}`;
                     document.getElementById('driverNameDisp').innerText = myData.name;
                     
-                    // Gap Ahead Logic
                     const gapAheadEl = document.getElementById('gapAhead');
                     if (myIndex > 0) {
                         const aheadRaw = parseFloat(runners[myIndex - 1].total_time_raw);
@@ -149,7 +167,6 @@
                         gapAheadEl.style.color = "#fff";
                     }
 
-                    // Gap Behind Logic
                     const gapBehindEl = document.getElementById('gapBehind');
                     if (myIndex < runners.length - 1) {
                         const behindRaw = parseFloat(runners[myIndex + 1].total_time_raw);
