@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Aston Kartin Dash - Final</title>
+    <title>Aston Kartin Dash - Interval Fix</title>
     <style>
         body, html { background-color: #000; color: #fff; margin: 0; padding: 0; height: 100%; width: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; font-family: 'Arial Black', sans-serif; overflow: hidden; }
         #config { position: absolute; top: 0; width: 100%; background: #111; padding: 10px; display: flex; justify-content: center; gap: 8px; z-index: 200; }
@@ -12,7 +12,7 @@
         #stintBox { position: absolute; top: 50px; left: 15px; text-align: left; z-index: 10; }
         #stintTimer { font-size: 25px; color: #ffc107; font-family: 'monospace'; }
         #posDisp { position: absolute; top: 45px; right: 15px; font-size: 40px; color: #fff; opacity: 0.4; }
-        .gap { font-size: 9vw; font-family: 'Courier New', monospace; font-weight: bold; }
+        .gap { font-size: 9vw; font-family: 'Courier New', monospace; font-weight: bold; transition: color 0.3s; }
         #gapAhead { color: #666; } #gapBehind { color: #666; }
         #lastTime { font-size: 32vw; line-height: 0.85; margin: 0; color: #28a745; white-space: nowrap; letter-spacing: -3px; }
         #driverNameDisp { position: absolute; bottom: 10px; left: 15px; font-size: 12px; color: #444; }
@@ -23,7 +23,7 @@
 <body>
 
     <div id="config">
-        <input type="text" id="track" value="speedforce">
+        <input type="text" id="track" value="speedforce2">
         <input type="text" id="team" value="Aston Kartin">
         <button id="startDashBtn" class="btn" style="background:#28a745; color:white;">START DASH</button>
     </div>
@@ -42,7 +42,6 @@
     </div>
 
     <div id="driverNameDisp">---</div>
-    <div id="status" style="display:none"></div>
     
     <button id="stintBtn" class="btn" onclick="handleStintLogic()">START STINT</button>
 
@@ -98,27 +97,41 @@
                     document.getElementById('posDisp').innerText = `P${myIndex + 1}`;
                     document.getElementById('driverNameDisp').innerText = myData.name;
 
-                    // Ahead Logic
+                    // --- GAP AHEAD (Διαφορά από τον 1 πάνω) ---
+                    // Χρησιμοποιούμε το δικό μας "int"
                     const gapAheadEl = document.getElementById('gapAhead');
                     if (myIndex > 0) {
                         const aheadData = runners[myIndex - 1];
-                        let diffAhead = (myData.int && myData.int !== "-") ? parseFloat(myData.int.replace('+', '')) : Math.abs(myData.last_passing - aheadData.last_passing) / 1000;
-                        if (diffAhead > 120 || (parseInt(aheadData.total_laps) > parseInt(myData.total_laps))) {
+                        let diffA;
+                        if (myData.int && myData.int !== "-") {
+                            diffA = parseFloat(myData.int.replace('+', ''));
+                        } else {
+                            diffA = Math.abs(myData.last_passing - aheadData.last_passing) / 1000;
+                        }
+
+                        if (diffA > 120 || (parseInt(aheadData.total_laps) > parseInt(myData.total_laps))) {
                             gapAheadEl.innerText = `+${parseInt(aheadData.total_laps) - parseInt(myData.total_laps)} LAP`;
                         } else {
-                            gapAheadEl.innerText = "+" + diffAhead.toFixed(2);
-                            if (lastGapAheadVal !== null) gapAheadEl.style.color = diffAhead < lastGapAheadVal ? "#28a745" : "#ffc107";
-                            lastGapAheadVal = diffAhead;
+                            gapAheadEl.innerText = "+" + diffA.toFixed(2);
+                            if (lastGapAheadVal !== null) gapAheadEl.style.color = diffA < lastGapAheadVal ? "#28a745" : "#ffc107";
+                            lastGapAheadVal = diffA;
                         }
                     } else { gapAheadEl.innerText = "LEADER"; gapAheadEl.style.color = "#fff"; }
 
-                    // Behind Logic
+                    // --- GAP BEHIND (Διαφορά από τον 1 κάτω) ---
+                    // Χρησιμοποιούμε το "int" του επόμενου οδηγού
                     const gapBehindEl = document.getElementById('gapBehind');
                     if (myIndex < runners.length - 1) {
-                        const b = runners[myIndex + 1];
-                        let diffB = (b.int && b.int !== "-") ? parseFloat(b.int.replace('+', '')) : Math.abs(b.last_passing - myData.last_passing) / 1000;
-                        if (diffB > 120 || (parseInt(myData.total_laps) > parseInt(b.total_laps))) {
-                            gapBehindEl.innerText = `+${parseInt(myData.total_laps) - parseInt(b.total_laps)} LAP`;
+                        const behindData = runners[myIndex + 1];
+                        let diffB;
+                        if (behindData.int && behindData.int !== "-") {
+                            diffB = parseFloat(behindData.int.replace('+', ''));
+                        } else {
+                            diffB = Math.abs(behindData.last_passing - myData.last_passing) / 1000;
+                        }
+
+                        if (diffB > 120 || (parseInt(myData.total_laps) > parseInt(behindData.total_laps))) {
+                            gapBehindEl.innerText = `+${parseInt(myData.total_laps) - parseInt(behindData.total_laps)} LAP`;
                         } else {
                             gapBehindEl.innerText = "+" + diffB.toFixed(2);
                             if (lastGapBehindVal !== null) gapBehindEl.style.color = diffB > lastGapBehindVal ? "#28a745" : "#ffc107";
