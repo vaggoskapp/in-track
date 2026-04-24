@@ -1,204 +1,82 @@
-<!DOCTYPE html>
-<html lang="el">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Aston Kartin Dash - Ranking Gaps</title>
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <style>
-        body, html {
-            background-color: #000; color: #fff; margin: 0; padding: 0;
-            height: 100%; width: 100%; display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
-            font-family: 'Arial Black', sans-serif; overflow: hidden;
-        }
+async function updateData() {
+    const timestamp = Date.now();
+    const targetUrl = `https://live.racefacer.com/ajax/live-data?slug=${trackName}&nocache=${timestamp}`;
+    try {
+        const response = await fetch(PROXY_URL + encodeURIComponent(targetUrl));
+        const data = await response.json();
+        const runners = data.data.runs;
+        const myIndex = runners.findIndex(p => p.name.toLowerCase().includes(teamName.toLowerCase()));
 
-        #config {
-            position: absolute; top: 0; width: 100%; background: #111; padding: 10px;
-            display: flex; justify-content: center; gap: 8px; z-index: 200;
-        }
-        input { background: #222; color: #fff; border: 1px solid #444; padding: 8px; border-radius: 5px; width: 90px; }
-        .btn { border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
+        if (myIndex !== -1) {
+            const myData = runners[myIndex];
+            document.getElementById('lastTime').innerText = myData.last_time || "0.000";
+            document.getElementById('posDisp').innerText = `P${myIndex + 1}`;
+            document.getElementById('driverNameDisp').innerText = myData.name;
 
-        #stintBox { position: absolute; top: 50px; left: 15px; text-align: left; z-index: 10; }
-        #stintLabel { font-size: 12px; color: #444; }
-        #stintTimer { font-size: 25px; color: #ffc107; font-family: 'monospace'; }
+            // --- GAP AHEAD (Διαφορά από τον μπροστινό) ---
+            const gapAheadEl = document.getElementById('gapAhead');
+            if (myIndex > 0) {
+                const aheadData = runners[myIndex - 1];
+                let diffAhead;
 
-        #posDisp { position: absolute; top: 45px; right: 15px; font-size: 40px; color: #fff; opacity: 0.4; z-index: 10; }
-
-        .gap { font-size: 9vw; font-family: 'Courier New', monospace; font-weight: bold; transition: color 0.3s ease; }
-        #gapAhead { margin-bottom: -5px; color: #666; } 
-        #gapBehind { margin-top: -5px; color: #666; }
-
-        #lastTime {
-            font-size: 32vw; line-height: 0.85; margin: 0; color: #28a745;
-            white-space: nowrap; letter-spacing: -3px;
-        }
-
-        #status { font-size: 12px; text-transform: uppercase; color: #222; margin-top: 5px; }
-        #driverNameDisp { position: absolute; bottom: 10px; left: 15px; font-size: 12px; color: #111; }
-        
-        #stintBtn { 
-            position: absolute; bottom: 15px; right: 15px; 
-            background: #007bff; color: #fff; font-size: 14px; 
-            border: none; display: none; z-index: 101; 
-            padding: 15px 25px; border-radius: 8px;
-        }
-
-        @media screen and (orientation: landscape) {
-            #lastTime { font-size: 52vh; }
-            .gap { font-size: 12vh; }
-            #stintBox { top: 10px; left: 10px; }
-            #stintTimer { font-size: 10vh; }
-            #posDisp { top: 5px; right: 10px; font-size: 12vh; }
-            #stintBtn { bottom: 10px; right: 10px; padding: 20px 30px; font-size: 18px; }
-        }
-    </style>
-</head>
-<body>
-
-    <div id="config">
-        <input type="text" id="track" value="speedforce">
-        <input type="text" id="team" value="Aston Kartin">
-        <button id="startDashBtn" class="btn" style="background:#28a745; color:white;">START DASH</button>
-    </div>
-
-    <div id="stintBox">
-        <div id="stintLabel">STINT TIME</div>
-        <div id="stintTimer">00:00</div>
-    </div>
-
-    <div id="posDisp">P--</div>
-
-    <div id="dashContainer" style="display:flex; flex-direction:column; align-items:center;">
-        <div id="gapAhead" class="gap">--.--</div>
-        <div id="lastTime">00.000</div>
-        <div id="gapBehind" class="gap">--.--</div>
-    </div>
-
-    <div id="status">READY</div>
-    <div id="driverNameDisp">---</div>
-    
-    <button id="stintBtn" class="btn" onclick="handleStintLogic()">START STINT</button>
-
-    <video id="noSleepVideo" loop playsinline muted style="display:none;">
-        <source src="https://raw.githubusercontent.com/anars/NoSleep.js/master/media/blank.mp4" type="video/mp4">
-    </video>
-
-    <script>
-        let trackName = "";
-        let teamName = "";
-        const PROXY_URL = "https://corsproxy.io/?";
-        
-        let stintStatus = "stopped";
-        let startTime = 0;
-        let elapsedTime = 0;
-        let timerInterval = null;
-        
-        let lastGapAheadVal = null;
-        let lastGapBehindVal = null;
-
-        document.getElementById('startDashBtn').addEventListener('click', function() {
-            trackName = document.getElementById('track').value.trim();
-            teamName = document.getElementById('team').value.trim();
-            document.getElementById('config').style.display = "none";
-            document.getElementById('stintBtn').style.display = "block";
-            document.getElementById('noSleepVideo').play();
-            if ('wakeLock' in navigator) navigator.wakeLock.request('screen');
-            updateData();
-            setInterval(updateData, 2000); 
-        });
-
-        function handleStintLogic() {
-            const btn = document.getElementById('stintBtn');
-            if (stintStatus === "stopped") {
-                startTime = Date.now();
-                stintStatus = "running";
-                btn.innerText = "PAUSE";
-                btn.style.background = "#fd7e14";
-                startTimer();
-            } else if (stintStatus === "running") {
-                stintStatus = "paused";
-                elapsedTime += Date.now() - startTime;
-                clearInterval(timerInterval);
-                btn.innerText = "RESET TO 0";
-                btn.style.background = "#dc3545";
-            } else if (stintStatus === "paused") {
-                stintStatus = "stopped";
-                startTime = 0; elapsedTime = 0;
-                document.getElementById('stintTimer').innerText = "00:00";
-                btn.innerText = "START STINT";
-                btn.style.background = "#007bff";
-            }
-        }
-
-        function startTimer() {
-            timerInterval = setInterval(() => {
-                const totalMs = elapsedTime + (Date.now() - startTime);
-                const totalSecs = Math.floor(totalMs / 1000);
-                const mins = Math.floor(totalSecs / 60).toString().padStart(2, '0');
-                const secs = (totalSecs % 60).toString().padStart(2, '0');
-                document.getElementById('stintTimer').innerText = `${mins}:${secs}`;
-            }, 1000);
-        }
-
-        async function updateData() {
-            const timestamp = Date.now();
-            const targetUrl = `https://live.racefacer.com/ajax/live-data?slug=${trackName}&nocache=${timestamp}`;
-            try {
-                const response = await fetch(PROXY_URL + encodeURIComponent(targetUrl));
-                const data = await response.json();
-                const runners = data.data.runs;
-                
-                // Εύρεση της δικής μας θέσης
-                const myIndex = runners.findIndex(p => p.name.toLowerCase().includes(teamName.toLowerCase()));
-
-                if (myIndex !== -1) {
-                    const myData = runners[myIndex];
-                    document.getElementById('lastTime').innerText = myData.last_time || "0.000";
-                    document.getElementById('posDisp').innerText = `P${myIndex + 1}`;
-                    document.getElementById('driverNameDisp').innerText = myData.name;
-
-                    // --- GAP AHEAD (Διαφορά από τον 1 θέση πάνω) ---
-                    const gapAheadEl = document.getElementById('gapAhead');
-                    if (myIndex > 0) {
-                        const aheadData = runners[myIndex - 1];
-                        // Χρησιμοποιούμε το total_time_raw αν υπάρχει, αλλιώς διαφορά last_time
-                        const diffAhead = Math.abs(parseFloat(myData.total_time_raw) - parseFloat(aheadData.total_time_raw)).toFixed(2);
-                        gapAheadEl.innerText = `+${diffAhead}`;
-                        
-                        if (lastGapAheadVal !== null) {
-                            gapAheadEl.style.color = parseFloat(diffAhead) < lastGapAheadVal ? "#28a745" : "#ffc107";
-                        }
-                        lastGapAheadVal = parseFloat(diffAhead);
-                    } else {
-                        gapAheadEl.innerText = "LEADER";
-                        gapAheadEl.style.color = "#fff";
-                    }
-
-                    // --- GAP BEHIND (Διαφορά από τον 1 θέση κάτω) ---
-                    const gapBehindEl = document.getElementById('gapBehind');
-                    if (myIndex < runners.length - 1) {
-                        const behindData = runners[myIndex + 1];
-                        const diffBehind = Math.abs(parseFloat(behindData.total_time_raw) - parseFloat(myData.total_time_raw)).toFixed(2);
-                        gapBehindEl.innerText = `+${diffBehind}`;
-                        
-                        if (lastGapBehindVal !== null) {
-                            gapBehindEl.style.color = parseFloat(diffBehind) > lastGapBehindVal ? "#28a745" : "#ffc107";
-                        }
-                        lastGapBehindVal = parseFloat(diffBehind);
-                    } else {
-                        gapBehindEl.innerText = "LAST";
-                        gapBehindEl.style.color = "#fff";
-                    }
-
-                    const isPit = myData.in_pit || String(myData.run_status).toLowerCase() === 'pit';
-                    document.getElementById('status').innerText = isPit ? "IN PIT" : "LIVE LAP";
-                    document.getElementById('lastTime').style.color = isPit ? "#333" : "#28a745";
+                // 1. Προσπάθησε να πάρεις το έτοιμο "int" (interval)
+                if (myData.int && myData.int !== "-") {
+                    diffAhead = parseFloat(myData.int.replace('+', ''));
+                } 
+                // 2. Αν δεν υπάρχει, υπολόγισε από το last_passing
+                else {
+                    diffAhead = Math.abs(myData.last_passing - aheadData.last_passing) / 1000;
                 }
-            } catch (e) { console.log("API Error"); }
+
+                // Έλεγχος για Laps
+                if (diffAhead > 120 || (parseInt(aheadData.total_laps) > parseInt(myData.total_laps))) {
+                    let lapDiff = parseInt(aheadData.total_laps) - parseInt(myData.total_laps);
+                    gapAheadEl.innerText = `+${lapDiff} LAP${lapDiff > 1 ? 'S' : ''}`;
+                } else {
+                    gapAheadEl.innerText = "+" + diffAhead.toFixed(2);
+                    if (lastGapAheadVal !== null) {
+                        gapAheadEl.style.color = diffAhead < lastGapAheadVal ? "#28a745" : "#ffc107";
+                    }
+                    lastGapAheadVal = diffAhead;
+                }
+            } else {
+                gapAheadEl.innerText = "LEADER";
+                gapAheadEl.style.color = "#fff";
+            }
+
+            // --- GAP BEHIND (Διαφορά από τον πίσω) ---
+            const gapBehindEl = document.getElementById('gapBehind');
+            if (myIndex < runners.length - 1) {
+                const behindData = runners[myIndex + 1];
+                let diffBehind;
+
+                // 1. Προσπάθησε να πάρεις το "int" του ΠΙΣΩ οδηγού
+                if (behindData.int && behindData.int !== "-") {
+                    diffBehind = parseFloat(behindData.int.replace('+', ''));
+                } 
+                // 2. Fallback στο last_passing
+                else {
+                    diffBehind = Math.abs(behindData.last_passing - myData.last_passing) / 1000;
+                }
+
+                if (diffBehind > 120 || (parseInt(myData.total_laps) > parseInt(behindData.total_laps))) {
+                    let lapDiff = parseInt(myData.total_laps) - parseInt(behindData.total_laps);
+                    gapBehindEl.innerText = `+${lapDiff} LAP${lapDiff > 1 ? 'S' : ''}`;
+                } else {
+                    gapBehindEl.innerText = "+" + diffBehind.toFixed(2);
+                    if (lastGapBehindVal !== null) {
+                        gapBehindEl.style.color = diffBehind > lastGapBehindVal ? "#28a745" : "#ffc107";
+                    }
+                    lastGapBehindVal = diffBehind;
+                }
+            } else {
+                gapBehindEl.innerText = "LAST";
+                gapBehindEl.style.color = "#fff";
+            }
+
+            const isPit = myData.in_pit || String(myData.run_status).toLowerCase() === 'pit';
+            document.getElementById('status').innerText = isPit ? "IN PIT" : "LIVE LAP";
+            document.getElementById('lastTime').style.color = isPit ? "#333" : "#28a745";
         }
-    </script>
-</body>
-</html>
+    } catch (e) { console.log("API Error"); }
+}
