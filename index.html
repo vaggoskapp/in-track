@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Aston Kartin Dash - Interval Fix</title>
+    <title>Aston Kartin Dash - Custom Options</title>
     <style>
         body, html { background-color: #000; color: #fff; margin: 0; padding: 0; height: 100%; width: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; font-family: 'Arial Black', sans-serif; overflow: hidden; }
         #config { position: absolute; top: 0; width: 100%; background: #111; padding: 10px; display: flex; justify-content: center; gap: 8px; z-index: 200; }
-        input { background: #222; color: #fff; border: 1px solid #444; padding: 8px; border-radius: 5px; width: 90px; }
+        input { background: #222; color: #fff; border: 1px solid #444; padding: 8px; border-radius: 5px; width: 130px; font-size: 14px; }
         .btn { border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
         #stintBox { position: absolute; top: 50px; left: 15px; text-align: left; z-index: 10; }
         #stintTimer { font-size: 25px; color: #ffc107; font-family: 'monospace'; }
@@ -17,15 +17,37 @@
         #lastTime { font-size: 32vw; line-height: 0.85; margin: 0; color: #28a745; white-space: nowrap; letter-spacing: -3px; }
         #driverNameDisp { position: absolute; bottom: 10px; left: 15px; font-size: 12px; color: #444; }
         #stintBtn { position: absolute; bottom: 15px; right: 15px; background: #007bff; color: #fff; font-size: 14px; border: none; display: none; z-index: 101; padding: 15px 25px; border-radius: 8px; }
-        @media screen and (orientation: landscape) { #lastTime { font-size: 52vh; } .gap { font-size: 12vh; } #stintTimer { font-size: 10vh; } #posDisp { font-size: 12vh; } }
+        
+        @media screen and (orientation: landscape) { 
+            #lastTime { font-size: 52vh; } 
+            .gap { font-size: 12vh; } 
+            #stintTimer { font-size: 10vh; } 
+            #posDisp { font-size: 12vh; } 
+        }
     </style>
 </head>
 <body>
 
     <div id="config">
-        <input type="text" id="track" value="speedforce2">
-        <input type="text" id="team" value="Aston Kartin">
-        <button id="startDashBtn" class="btn" style="background:#28a745; color:white;">START DASH</button>
+        <!-- Track Selection -->
+        <input type="text" id="track" list="trackOptions" placeholder="Track" value="speedforce2">
+        <datalist id="trackOptions">
+            <option value="speedforce2">Speedforce (Aspropyrgos)</option>
+            <option value="megarakartingcircuit">Megara Karting Circuit</option>
+        </datalist>
+
+        <!-- Team/Driver Selection -->
+        <input type="text" id="team" list="teamOptions" placeholder="Driver/Team">
+        <datalist id="teamOptions">
+            <option value="KAPPIS EVANGELOS">
+            <option value="KAPPIS VAGGELIS">
+            <option value="KAPPIS CHARALAMPOS">
+            <option value="KAPPIS HARALAMPOS">
+            <option value="Haralampos Kappis">
+            <option value="Charalampos Kappis">
+        </datalist>
+
+        <button id="startDashBtn" class="btn" style="background:#28a745; color:white;">START</button>
     </div>
 
     <div id="stintBox">
@@ -46,15 +68,46 @@
     <button id="stintBtn" class="btn" onclick="handleStintLogic()">START STINT</button>
 
     <script>
-        let trackName = ""; let teamName = ""; const PROXY_URL = "https://corsproxy.io/?";
-        let stintStatus = "stopped"; let startTime = 0; let elapsedTime = 0; let timerInterval = null;
-        let lastGapAheadVal = null; let lastGapBehindVal = null;
+        let trackName = ""; 
+        let teamName = ""; 
+        const PROXY_URL = "https://corsproxy.io/?";
+        let stintStatus = "stopped"; 
+        let startTime = 0; 
+        let elapsedTime = 0; 
+        let timerInterval = null;
+        let lastGapAheadVal = null; 
+        let lastGapBehindVal = null;
+        let wakeLock = null;
+
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                }
+            } catch (err) {
+                console.log('Wake Lock Error: ' + err.message);
+            }
+        }
+
+        document.addEventListener('visibilitychange', async () => {
+            if (wakeLock !== null && document.visibilityState === 'visible') {
+                await requestWakeLock();
+            }
+        });
 
         document.getElementById('startDashBtn').addEventListener('click', function() {
             trackName = document.getElementById('track').value.trim();
             teamName = document.getElementById('team').value.trim();
+            
+            if(!trackName || !teamName) {
+                alert("Συμπλήρωσε Track και Team!");
+                return;
+            }
+
             document.getElementById('config').style.display = "none";
             document.getElementById('stintBtn').style.display = "block";
+            
+            requestWakeLock();
             updateData();
             setInterval(updateData, 2000);
         });
@@ -97,8 +150,6 @@
                     document.getElementById('posDisp').innerText = `P${myIndex + 1}`;
                     document.getElementById('driverNameDisp').innerText = myData.name;
 
-                    // --- GAP AHEAD (Διαφορά από τον 1 πάνω) ---
-                    // Χρησιμοποιούμε το δικό μας "int"
                     const gapAheadEl = document.getElementById('gapAhead');
                     if (myIndex > 0) {
                         const aheadData = runners[myIndex - 1];
@@ -118,8 +169,6 @@
                         }
                     } else { gapAheadEl.innerText = "LEADER"; gapAheadEl.style.color = "#fff"; }
 
-                    // --- GAP BEHIND (Διαφορά από τον 1 κάτω) ---
-                    // Χρησιμοποιούμε το "int" του επόμενου οδηγού
                     const gapBehindEl = document.getElementById('gapBehind');
                     if (myIndex < runners.length - 1) {
                         const behindData = runners[myIndex + 1];
