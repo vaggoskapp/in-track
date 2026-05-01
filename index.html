@@ -3,83 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Aston Kartin Dash - Fixed Dropdowns</title>
+    <title>Aston Kartin Dash - Mobile Setup</title>
     <style>
         body, html { background-color: #000; color: #fff; margin: 0; padding: 0; height: 100%; width: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; font-family: 'Arial Black', sans-serif; overflow: hidden; }
         
-        /* Βελτιωμένο Config Bar για πλάγια οθόνη */
-        #config { 
-            position: absolute; 
-            top: 0; 
-            width: 100%; 
-            background: rgba(17, 17, 17, 0.95); 
-            padding: 8px 0; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center;
-            gap: 5px; 
-            z-index: 500; 
-            border-bottom: 1px solid #333;
-        }
-
-        input { 
-            background: #222; 
-            color: #fff; 
-            border: 1px solid #555; 
-            padding: 10px; 
-            border-radius: 5px; 
-            width: 120px; 
-            font-size: 14px;
-            outline: none;
-        }
-
-        input:focus { border-color: #28a745; background: #333; }
-
-        .btn { border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
+        /* Config Bar */
+        #config { position: absolute; top: 0; width: 100%; background: #111; padding: 10px; display: flex; justify-content: center; gap: 10px; z-index: 200; }
+        .setup-btn { background: #222; color: #fff; border: 1px solid #444; padding: 10px; border-radius: 5px; width: 130px; font-size: 12px; text-align: center; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         
-        #stintBox { position: absolute; top: 55px; left: 15px; text-align: left; z-index: 10; }
+        /* Modal Overlay */
+        #modalOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; padding: 20px; box-sizing: border-box; }
+        .modal-title { font-size: 20px; color: #28a745; margin-bottom: 20px; }
+        .option-btn { background: #333; color: white; border: 1px solid #555; padding: 15px; margin: 5px; width: 100%; max-width: 300px; border-radius: 8px; font-size: 16px; font-weight: bold; }
+        .option-btn:active { background: #28a745; }
+        .custom-input-wrap { display: none; width: 100%; max-width: 300px; margin-top: 10px; }
+        .custom-input-wrap input { width: 80%; padding: 12px; border-radius: 5px 0 0 5px; border: none; }
+        .custom-input-wrap button { width: 20%; padding: 12px; border-radius: 0 5px 5px 0; border: none; background: #28a745; color: white; }
+
+        /* Dashboard UI */
+        .btn { border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
+        #stintBox { position: absolute; top: 60px; left: 15px; text-align: left; z-index: 10; }
         #stintTimer { font-size: 25px; color: #ffc107; font-family: 'monospace'; }
-        #posDisp { position: absolute; top: 50px; right: 15px; font-size: 40px; color: #fff; opacity: 0.4; }
-        
-        .gap { font-size: 9vw; font-family: 'Courier New', monospace; font-weight: bold; transition: color 0.3s; }
-        #gapAhead { color: #666; } #gapBehind { color: #666; }
+        #posDisp { position: absolute; top: 55px; right: 15px; font-size: 40px; color: #fff; opacity: 0.4; }
+        .gap { font-size: 9vw; font-family: 'Courier New', monospace; font-weight: bold; }
         #lastTime { font-size: 32vw; line-height: 0.85; margin: 0; color: #28a745; white-space: nowrap; letter-spacing: -3px; }
-        
         #driverNameDisp { position: absolute; bottom: 10px; left: 15px; font-size: 12px; color: #444; }
         #stintBtn { position: absolute; bottom: 15px; right: 15px; background: #007bff; color: #fff; font-size: 14px; border: none; display: none; z-index: 101; padding: 15px 25px; border-radius: 8px; }
         
-        /* Landscape Optimization */
         @media screen and (orientation: landscape) { 
-            #config { padding: 4px 0; }
-            input { width: 150px; padding: 6px; font-size: 13px; }
-            #lastTime { font-size: 52vh; } 
-            .gap { font-size: 12vh; } 
-            #stintTimer { font-size: 10vh; } 
-            #posDisp { font-size: 12vh; top: 40px; }
-            #stintBox { top: 40px; }
+            #lastTime { font-size: 52vh; } .gap { font-size: 12vh; } #stintTimer { font-size: 10vh; } #posDisp { font-size: 12vh; } 
         }
     </style>
 </head>
 <body>
 
     <div id="config">
-        <input type="text" id="track" list="trackOptions" placeholder="Track" value="speedforce2" autocomplete="off">
-        <datalist id="trackOptions">
-            <option value="speedforce2">
-            <option value="megarakartingcircuit">
-        </datalist>
-
-        <input type="text" id="team" list="teamOptions" placeholder="Driver/Team" autocomplete="off">
-        <datalist id="teamOptions">
-            <option value="KAPPIS EVANGELOS">
-            <option value="KAPPIS VAGGELIS">
-            <option value="KAPPIS CHARALAMPOS">
-            <option value="KAPPIS HARALAMPOS">
-            <option value="Haralampos Kappis">
-            <option value="Charalampos Kappis">
-        </datalist>
-
+        <div id="trackSelect" class="setup-btn" onclick="openModal('track')">Track: speedforce2</div>
+        <div id="teamSelect" class="setup-btn" onclick="openModal('team')">Select Driver...</div>
         <button id="startDashBtn" class="btn" style="background:#28a745; color:white;">START</button>
+    </div>
+
+    <!-- Full Screen Selection Modal -->
+    <div id="modalOverlay">
+        <div class="modal-title" id="modalTitle">Select Option</div>
+        <div id="optionsContainer" style="width: 100%; display: flex; flex-direction: column; align-items: center; overflow-y: auto;"></div>
+        
+        <div id="customInputWrap" class="custom-input-wrap">
+            <input type="text" id="customInput" placeholder="Type here...">
+            <button onclick="saveCustom()">OK</button>
+        </div>
+        
+        <button class="btn" style="margin-top: 20px; background: #444; color: white;" onclick="closeModal()">CANCEL</button>
     </div>
 
     <div id="stintBox">
@@ -96,47 +70,72 @@
     </div>
 
     <div id="driverNameDisp">---</div>
-    
     <button id="stintBtn" class="btn" onclick="handleStintLogic()">START STINT</button>
 
     <script>
-        let trackName = ""; 
+        let trackName = "speedforce2"; 
         let teamName = ""; 
+        let currentMode = ""; 
         const PROXY_URL = "https://corsproxy.io/?";
-        let stintStatus = "stopped"; 
-        let startTime = 0; 
-        let elapsedTime = 0; 
-        let timerInterval = null;
-        let lastGapAheadVal = null; 
-        let lastGapBehindVal = null;
-        let wakeLock = null;
+        let stintStatus = "stopped", startTime = 0, elapsedTime = 0, timerInterval = null;
+        let lastGapAheadVal = null, lastGapBehindVal = null, wakeLock = null;
 
-        async function requestWakeLock() {
-            try {
-                if ('wakeLock' in navigator) {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                }
-            } catch (err) { console.log('Wake Lock Error'); }
+        const options = {
+            track: ["speedforce2", "megarakartingcircuit"],
+            team: ["KAPPIS EVANGELOS", "KAPPIS VAGGELIS", "KAPPIS CHARALAMPOS", "KAPPIS HARALAMPOS", "Haralampos Kappis", "Charalampos Kappis"]
+        };
+
+        function openModal(mode) {
+            currentMode = mode;
+            document.getElementById('modalTitle').innerText = mode === 'track' ? "Select Track" : "Select Driver";
+            const container = document.getElementById('optionsContainer');
+            container.innerHTML = "";
+            document.getElementById('customInputWrap').style.display = "none";
+
+            options[mode].forEach(opt => {
+                let b = document.createElement('button');
+                b.className = "option-btn";
+                b.innerText = opt;
+                b.onclick = () => selectOption(opt);
+                container.appendChild(b);
+            });
+
+            let customBtn = document.createElement('button');
+            customBtn.className = "option-btn";
+            customBtn.style.border = "1px dashed #28a745";
+            customBtn.innerText = "+ Custom Text";
+            customBtn.onclick = () => { document.getElementById('customInputWrap').style.display = "flex"; document.getElementById('customInput').focus(); };
+            container.appendChild(customBtn);
+
+            document.getElementById('modalOverlay').style.display = "flex";
         }
 
-        document.addEventListener('visibilitychange', async () => {
-            if (wakeLock !== null && document.visibilityState === 'visible') {
-                await requestWakeLock();
+        function selectOption(val) {
+            if (currentMode === 'track') {
+                trackName = val;
+                document.getElementById('trackSelect').innerText = "Track: " + val;
+            } else {
+                teamName = val;
+                document.getElementById('teamSelect').innerText = val;
             }
-        });
+            closeModal();
+        }
+
+        function saveCustom() {
+            const val = document.getElementById('customInput').value.trim();
+            if (val) selectOption(val);
+        }
+
+        function closeModal() { document.getElementById('modalOverlay').style.display = "none"; }
+
+        async function requestWakeLock() {
+            try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
+        }
 
         document.getElementById('startDashBtn').addEventListener('click', function() {
-            trackName = document.getElementById('track').value.trim();
-            teamName = document.getElementById('team').value.trim();
-            
-            if(!trackName || !teamName) {
-                alert("Συμπλήρωσε Track και Team!");
-                return;
-            }
-
+            if(!teamName) { alert("Select Driver first!"); return; }
             document.getElementById('config').style.display = "none";
             document.getElementById('stintBtn').style.display = "block";
-            
             requestWakeLock();
             updateData();
             setInterval(updateData, 2000);
@@ -166,59 +165,50 @@
         }
 
         async function updateData() {
-            const timestamp = Date.now();
-            const targetUrl = `https://live.racefacer.com/ajax/live-data?slug=${trackName}&nocache=${timestamp}`;
+            const targetUrl = `https://live.racefacer.com/ajax/live-data?slug=${trackName}&nocache=${Date.now()}`;
             try {
                 const response = await fetch(PROXY_URL + encodeURIComponent(targetUrl));
                 const data = await response.json();
                 const runners = data.data.runs;
                 const myIndex = runners.findIndex(p => p.name.toLowerCase().includes(teamName.toLowerCase()));
-
                 if (myIndex !== -1) {
                     const myData = runners[myIndex];
                     document.getElementById('lastTime').innerText = myData.last_time || "0.000";
                     document.getElementById('posDisp').innerText = `P${myIndex + 1}`;
                     document.getElementById('driverNameDisp').innerText = myData.name;
-
-                    const gapAheadEl = document.getElementById('gapAhead');
-                    if (myIndex > 0) {
-                        const aheadData = runners[myIndex - 1];
-                        let diffA;
-                        if (myData.int && myData.int !== "-") {
-                            diffA = parseFloat(myData.int.replace('+', ''));
-                        } else {
-                            diffA = Math.abs(myData.last_passing - aheadData.last_passing) / 1000;
-                        }
-
-                        if (diffA > 120 || (parseInt(aheadData.total_laps) > parseInt(myData.total_laps))) {
-                            gapAheadEl.innerText = `+${parseInt(aheadData.total_laps) - parseInt(myData.total_laps)} LAP`;
-                        } else {
-                            gapAheadEl.innerText = "+" + diffA.toFixed(2);
-                            if (lastGapAheadVal !== null) gapAheadEl.style.color = diffA < lastGapAheadVal ? "#28a745" : "#ffc107";
-                            lastGapAheadVal = diffA;
-                        }
-                    } else { gapAheadEl.innerText = "LEADER"; gapAheadEl.style.color = "#fff"; }
-
-                    const gapBehindEl = document.getElementById('gapBehind');
-                    if (myIndex < runners.length - 1) {
-                        const behindData = runners[myIndex + 1];
-                        let diffB;
-                        if (behindData.int && behindData.int !== "-") {
-                            diffB = parseFloat(behindData.int.replace('+', ''));
-                        } else {
-                            diffB = Math.abs(behindData.last_passing - myData.last_passing) / 1000;
-                        }
-
-                        if (diffB > 120 || (parseInt(myData.total_laps) > parseInt(behindData.total_laps))) {
-                            gapBehindEl.innerText = `+${parseInt(myData.total_laps) - parseInt(behindData.total_laps)} LAP`;
-                        } else {
-                            gapBehindEl.innerText = "+" + diffB.toFixed(2);
-                            if (lastGapBehindVal !== null) gapBehindEl.style.color = diffB > lastGapBehindVal ? "#28a745" : "#ffc107";
-                            lastGapBehindVal = diffB;
-                        }
-                    } else { gapBehindEl.innerText = "LAST"; gapBehindEl.style.color = "#fff"; }
+                    updateGaps(runners, myIndex, myData);
                 }
-            } catch (e) { console.log("API Error"); }
+            } catch (e) {}
+        }
+
+        function updateGaps(runners, myIndex, myData) {
+            // Gap Ahead
+            const gapAheadEl = document.getElementById('gapAhead');
+            if (myIndex > 0) {
+                const ahead = runners[myIndex - 1];
+                let diff = (myData.int && myData.int !== "-") ? parseFloat(myData.int.replace('+', '')) : Math.abs(myData.last_passing - ahead.last_passing) / 1000;
+                if (diff > 120 || parseInt(ahead.total_laps) > parseInt(myData.total_laps)) {
+                    gapAheadEl.innerText = `+${parseInt(ahead.total_laps) - parseInt(myData.total_laps)} LAP`;
+                } else {
+                    gapAheadEl.innerText = "+" + diff.toFixed(2);
+                    if (lastGapAheadVal !== null) gapAheadEl.style.color = diff < lastGapAheadVal ? "#28a745" : "#ffc107";
+                    lastGapAheadVal = diff;
+                }
+            } else { gapAheadEl.innerText = "LEADER"; gapAheadEl.style.color = "#fff"; }
+
+            // Gap Behind
+            const gapBehindEl = document.getElementById('gapBehind');
+            if (myIndex < runners.length - 1) {
+                const behind = runners[myIndex + 1];
+                let diff = (behind.int && behind.int !== "-") ? parseFloat(behind.int.replace('+', '')) : Math.abs(behind.last_passing - myData.last_passing) / 1000;
+                if (diff > 120 || parseInt(myData.total_laps) > parseInt(behind.total_laps)) {
+                    gapBehindEl.innerText = `+${parseInt(myData.total_laps) - parseInt(behind.total_laps)} LAP`;
+                } else {
+                    gapBehindEl.innerText = "+" + diff.toFixed(2);
+                    if (lastGapBehindVal !== null) gapBehindEl.style.color = diff > lastGapBehindVal ? "#28a745" : "#ffc107";
+                    lastGapBehindVal = diff;
+                }
+            } else { gapBehindEl.innerText = "LAST"; gapBehindEl.style.color = "#fff"; }
         }
     </script>
 </body>
