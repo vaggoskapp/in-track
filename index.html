@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Aston Kartin Dash - Flat Layout</title>
+    <title>Aston Kartin Dash - Top Alignment</title>
     <style>
         body, html { background-color: #000; color: #fff; margin: 0; padding: 0; height: 100%; width: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; font-family: 'Arial Black', sans-serif; overflow: hidden; }
         
@@ -19,36 +19,38 @@
         .custom-input-wrap input { width: 80%; padding: 12px; border-radius: 5px 0 0 5px; border: none; }
         .custom-input-wrap button { width: 20%; padding: 12px; border-radius: 0 5px 5px 0; border: none; background: #28a745; color: white; }
 
-        /* Dashboard Elements */
+        /* UI Elements */
         #stintBox { position: absolute; top: 15px; left: 15px; text-align: left; z-index: 10; }
         #stintTimer { font-size: 22px; color: #ffc107; font-family: 'monospace'; font-weight: bold; }
-        #posDisp { position: absolute; bottom: 50px; right: 15px; font-size: 35px; color: #fff; opacity: 0.5; }
         
-        .gap { font-size: 9vw; font-family: 'Courier New', monospace; font-weight: bold; margin: 0; z-index: 5; }
+        #posDisp { position: absolute; top: 15px; right: 15px; font-size: 35px; color: #fff; font-weight: bold; z-index: 10; }
+        
+        #dashContainer { display: flex; flex-direction: column; align-items: center; width: 100%; height: 80vh; justify-content: center; }
+        
+        .gap { font-size: 9vw; font-family: 'Courier New', monospace; font-weight: bold; margin: 0; }
         #gapAhead { color: #666; }
         #gapBehind { color: #666; }
         
-        #lastTime { font-size: 32vw; line-height: 0.8; margin: 0; color: #28a745; white-space: nowrap; letter-spacing: -2px; z-index: 1; }
+        #lastTime { font-size: 32vw; line-height: 0.8; margin: 10px 0; color: #28a745; white-space: nowrap; letter-spacing: -2px; }
         
         #driverNameDisp { position: absolute; bottom: 8px; left: 12px; font-size: 11px; color: #444; text-transform: uppercase; }
-        #stintBtn { position: absolute; bottom: 15px; right: 15px; background: #007bff; color: #fff; font-size: 14px; border: none; display: none; z-index: 101; padding: 15px 25px; border-radius: 8px; font-weight: bold; }
         
-        /* Landscape Optimization - "The Flat Look" */
+        /* Το κουμπί START STINT κάτω δεξιά */
+        #stintBtn { position: absolute; bottom: 15px; right: 15px; background: #007bff; color: #fff; font-size: 14px; border: none; display: none; z-index: 101; padding: 15px 25px; border-radius: 8px; font-weight: bold; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
+        
+        /* Landscape Optimization */
         @media screen and (orientation: landscape) { 
-            /* Το Stint Timer στην ίδια ευθεία με το Gap Ahead (Πάνω) */
-            #stintBox { top: 5%; left: 5%; }
-            #stintTimer { font-size: 10vh; }
+            /* Όλα στην ίδια ευθεία πάνω */
+            #stintBox { top: 4%; left: 3%; }
+            #stintTimer { font-size: 9vh; }
             
-            /* Το Position στην ίδια ευθεία με το Gap Behind (Κάτω) */
-            #posDisp { bottom: 5%; right: 5%; font-size: 12vh; top: auto; }
+            #posDisp { top: 4%; right: 3%; font-size: 11vh; }
             
-            #lastTime { font-size: 55vh; margin: 0; }
-            .gap { font-size: 12vh; }
+            #dashContainer { height: 90vh; padding-top: 5vh; }
+            #gapAhead { font-size: 10vh; margin-bottom: -2vh; } /* Το Gap Ahead ευθυγραμμίζεται οπτικά με Stint/Pos */
             
-            /* Gap Ahead Position */
-            #gapAhead { margin-top: 2vh; }
-            /* Gap Behind Position */
-            #gapBehind { margin-bottom: 2vh; }
+            #lastTime { font-size: 55vh; }
+            #gapBehind { font-size: 10vh; margin-top: -2vh; }
         }
     </style>
 </head>
@@ -57,7 +59,7 @@
     <div id="config">
         <div id="trackSelect" class="setup-btn" onclick="openModal('track')">Track: speedforce2</div>
         <div id="teamSelect" class="setup-btn" onclick="openModal('team')">Select Driver...</div>
-        <button id="startDashBtn" style="background:#28a745; border:none; color:white; padding:10px 20px; border-radius:5px; font-weight:bold; cursor:pointer;">START</button>
+        <button id="startDashBtn" style="background:#28a745; border:none; color:white; padding:10px 20px; border-radius:5px; font-weight:bold; cursor:pointer;">START DASH</button>
     </div>
 
     <div id="modalOverlay">
@@ -70,7 +72,7 @@
         <button style="margin-top: 20px; background: #444; color: white; border:none; padding:10px 20px; border-radius:5px;" onclick="closeModal()">CANCEL</button>
     </div>
 
-    <!-- UI Elements -->
+    <!-- Main Dash -->
     <div id="stintBox">
         <div style="font-size:10px; color:#555; font-weight:bold;">STINT</div>
         <div id="stintTimer">00:00</div>
@@ -78,7 +80,7 @@
 
     <div id="posDisp">P--</div>
 
-    <div id="dashContainer" style="display:flex; flex-direction:column; align-items:center; width:100%; justify-content: space-between; height: 85vh;">
+    <div id="dashContainer">
         <div id="gapAhead" class="gap">--.--</div>
         <div id="lastTime">0.000</div>
         <div id="gapBehind" class="gap">--.--</div>
