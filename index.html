@@ -82,7 +82,7 @@
         // Όλα τα ονόματα στις επιλογές μετατρέπονται σε lower case
         const options = {
             track: ["speedforce2", "megarakartingcircuit"],
-            team: ["aston kartin", "kappis evangelos", "kappis vaggelis", "kappis charalampos"]
+            team: ["aston kartin", "kappis evangelos", "kappis vaggelis", "kappis charalampos", "haralampos kappis"]
         };
 
         function openModal(mode) {
@@ -92,8 +92,6 @@
             options[mode].forEach(opt => {
                 let b = document.createElement('button');
                 b.className = "option-btn";
-                // Εμφάνιση σε Uppercase για το UI, αλλά η τιμή είναι lowercase
-                b.innerText = opt.toUpperCase();
                 b.onclick = () => selectOption(opt);
                 container.appendChild(b);
             });
