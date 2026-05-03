@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Aston Kartin Dash - Auto-Lowercase</title>
+    <title>Aston Kartin Dash</title>
     <style>
         body, html { background-color: #000; color: #fff; margin: 0; padding: 0; height: 100%; width: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; font-family: 'Arial Black', sans-serif; overflow: hidden; }
         
@@ -44,15 +44,15 @@
 <body>
 
     <div id="config">
-        <div id="trackSelect" class="setup-btn" onclick="openModal('track')">Track: speedforce2</div>
-        <div id="teamSelect" class="setup-btn" onclick="openModal('team')">ASTON KARTIN</div>
+        <div id="trackSelect" class="setup-btn" onclick="openModal('track')">track: speedforce2</div>
+        <div id="teamSelect" class="setup-btn" onclick="openModal('team')">aston kartin</div>
         <button id="startDashBtn" style="background:#28a745; border:none; color:white; padding:10px 20px; border-radius:5px; font-weight:bold; cursor:pointer;">START</button>
     </div>
 
     <div id="modalOverlay">
         <div class="modal-title" id="modalTitle">Select Option</div>
         <div id="optionsContainer" style="width: 100%; display: flex; flex-direction: column; align-items: center; overflow-y: auto;"></div>
-        <input type="text" id="customInput" placeholder="Type name or team..." style="width: 280px; padding: 15px; border-radius: 8px; border: 1px solid #555; background: #222; color: #fff; margin-bottom: 10px; font-size: 16px;">
+        <input type="text" id="customInput" placeholder="type name or team..." style="width: 280px; padding: 15px; border-radius: 8px; border: 1px solid #555; background: #222; color: #fff; margin-bottom: 10px; font-size: 16px;">
         <button style="background: #28a745; color: white; border:none; padding:15px 30px; border-radius:8px; font-weight:bold;" onclick="saveCustom()">SEARCH CUSTOM</button>
         <button style="margin-top: 15px; background: #444; color: white; border:none; padding:10px 20px; border-radius:5px;" onclick="closeModal()">CANCEL</button>
     </div>
@@ -73,16 +73,14 @@
     <button id="stintBtn" onclick="handleStintLogic()">START STINT</button>
 
     <script>
-        // ΠΡΟΕΠΙΛΟΓΗ: aston kartin (σε lower case για την αναζήτηση)
         let trackName = "speedforce2", searchTerm = "aston kartin", currentMode = ""; 
         const PROXY_URL = "https://corsproxy.io/?";
         let stintStatus = "stopped", startTime = 0, elapsedTime = 0, timerInterval = null;
         let lastGapAheadVal = null, lastGapBehindVal = null, wakeLock = null;
 
-        // Όλα τα ονόματα στις επιλογές μετατρέπονται σε lower case
         const options = {
             track: ["speedforce2", "megarakartingcircuit"],
-            team: ["aston kartin", "kappis evangelos", "kappis vaggelis", "kappis charalampos", "haralampos kappis"]
+            team: ["aston kartin", "kappis evangelos", "kappis vaggelis", "kappis charalampos"]
         };
 
         function openModal(mode) {
@@ -92,6 +90,7 @@
             options[mode].forEach(opt => {
                 let b = document.createElement('button');
                 b.className = "option-btn";
+                b.innerText = opt;
                 b.onclick = () => selectOption(opt);
                 container.appendChild(b);
             });
@@ -102,10 +101,10 @@
             const cleanVal = val.toLowerCase().trim();
             if (currentMode === 'track') { 
                 trackName = cleanVal; 
-                document.getElementById('trackSelect').innerText = "Track: " + cleanVal; 
+                document.getElementById('trackSelect').innerText = "track: " + cleanVal; 
             } else { 
                 searchTerm = cleanVal; 
-                document.getElementById('teamSelect').innerText = val.toUpperCase(); 
+                document.getElementById('teamSelect').innerText = cleanVal; 
             }
             closeModal();
         }
@@ -159,7 +158,6 @@
                 const data = await response.json();
                 const runners = data.data.runs;
                 
-                // Διπλή αναζήτηση σε team και name με lowercase match
                 const myIndex = runners.findIndex(p => {
                     const apiName = (p.name || "").toLowerCase();
                     const apiTeam = (p.team || "").toLowerCase();
