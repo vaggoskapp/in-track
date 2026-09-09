@@ -132,6 +132,7 @@
         document.getElementById('startDashBtn').addEventListener('click', function() {
             document.getElementById('config').style.display = "none";
             document.getElementById('stintBtn').style.display = "block";
+            document.getElementById('driverNameDisp').innerText = "CONNECTING...";
             requestWakeLock();
             updateData();
             setInterval(updateData, 2000);
@@ -160,22 +161,40 @@
             }
         }
 
+        // Συνάρτηση με πολλαπλούς Proxies για να ξεπεράσει το CORS issue
+        async function fetchRaceData(targetUrl) {
+            const proxies = [
+                url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+                url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+                url => `https://thingproxy.freeboard.io/fetch/${url}`,
+                url => url // Απευθείας αίτημα αν εκτελείται από διακομιστή
+            ];
+
+            for (let proxyFn of proxies) {
+                try {
+                    const proxyUrl = proxyFn(targetUrl);
+                    const res = await fetch(proxyUrl, { cache: "no-store" });
+                    if (res.ok) {
+                        const json = await res.json();
+                        if (json && (json.data || json.runs)) return json;
+                    }
+                } catch (e) {
+                    continue; // Δοκιμή στον επόμενο proxy αν αποτύχει
+                }
+            }
+            return null;
+        }
+
         async function updateData() {
             const targetUrl = `https://live.racefacer.com/ajax/live-data?slug=${trackName}&nocache=${Date.now()}`;
-            let data = null;
+            const responseData = await fetchRaceData(targetUrl);
 
-            try {
-                const res = await fetch("https://corsproxy.io/?" + encodeURIComponent(targetUrl));
-                data = await res.json();
-            } catch (e1) {
-                try {
-                    const res2 = await fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(targetUrl));
-                    data = await res2.json();
-                } catch (e2) {}
+            if (!responseData || !responseData.data || !responseData.data.runs) {
+                document.getElementById('driverNameDisp').innerText = "FETCH ERROR / NO LIVE DATA";
+                return;
             }
 
-            if (!data || !data.data || !data.data.runs) return;
-            const runners = data.data.runs;
+            const runners = responseData.data.runs;
             
             const myIndex = runners.findIndex(p => {
                 const apiName = (p.name || "").toLowerCase().trim();
@@ -192,7 +211,7 @@
                 
                 updateGaps(runners, myIndex, myData);
             } else {
-                document.getElementById('driverNameDisp').innerText = "SEARCHING FOR: " + searchTerm.toUpperCase();
+                document.getElementById('driverNameDisp').innerText = "NOT FOUND: " + searchTerm.toUpperCase();
             }
         }
 
